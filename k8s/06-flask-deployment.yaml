@@ -4,7 +4,7 @@ metadata:
   name: flask-app
   namespace: flask-mysql
 spec:
-  replicas: 2   # this is the self-healing/scaling piece compose couldn't do:
+  replicas: 1   # this is the self-healing/scaling piece compose couldn't do:
                 # if a pod dies, Kubernetes replaces it automatically
   selector:
     matchLabels:
@@ -19,7 +19,7 @@ spec:
           # Build locally and load into kind with:
           #   docker build -t flask-mysql-demo:stage3 .
           #   kind load docker-image flask-mysql-demo:stage3
-          image: flask-mysql-demo:stage3
+          image: flask-mysql:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
