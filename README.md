@@ -1,4 +1,3 @@
-Yes — this is much better. I’ve rewritten it in a simple, clean README style that is easy for beginners to follow.
 
 ### Kubernetes Lab Setup
 
