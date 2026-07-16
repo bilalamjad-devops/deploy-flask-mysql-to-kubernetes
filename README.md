@@ -1,136 +1,139 @@
-I actually like your approach.
+Yes — this is much better. I’ve rewritten it in a simple, clean README style that is easy for beginners to follow.
 
-Instead of one huge repository, you're building a **learning series**:
+### Kubernetes Lab Setup
 
-1. `containerize-flask-mysql-application`
-2. `orchestrate-flask-mysql-with-docker-compose`
-3. `deploy-flask-mysql-to-kubernetes`
-4. `automate-flask-kubernetes-with-github-actions`
+### Prerequisites
 
-Each repo teaches **one new tool**, which makes your GitHub much easier for recruiters and learners to follow.
+* Docker Desktop is running
 
----
+* Minikube is installed
 
-## Before the workflow
+* Kubectl is installed
 
-One important point.
+### Step 1: Start Minikube
 
-A GitHub Actions runner **cannot deploy directly to your local Minikube** because Minikube is running on your laptop, while GitHub Actions runs on GitHub's cloud servers.
-
-So for this repository, I recommend focusing on **Continuous Integration (CI)** only.
-
-The workflow should:
-
-* ✅ Checkout code
-* ✅ Set up Python
-* ✅ Install dependencies
-* ✅ Build Docker image
-* ✅ Login to Docker Hub
-* ✅ Push Docker image
-
-This is exactly what many companies do in a CI pipeline.
-
-Deployment (CD) can come later when you deploy to AWS (EKS) or another reachable Kubernetes cluster.
-
----
-
-## `.github/workflows/docker-build.yml`
-
-```yaml
-name: Build and Push Docker Image
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  docker:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build Docker Image
-        run: |
-          docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/flask-mysql:latest .
-
-      - name: Push Docker Image
-        run: |
-          docker push \
-            ${{ secrets.DOCKER_USERNAME }}/flask-mysql:latest
-```
-
----
-
-## GitHub Secrets
-
-Your repository needs two secrets.
-
-| Secret            | Value                        |
-| ----------------- | ---------------------------- |
-| `DOCKER_USERNAME` | `bilalamjaddevops`           |
-| `DOCKER_PASSWORD` | Your Docker Hub Access Token |
-
-> Don't use your Docker Hub account password. Create an **Access Token** instead.
-
----
-
-## Workflow
+Bash
 
 ```
-Developer
-      │
-git push
-      │
-      ▼
-GitHub Actions
-      │
-      ▼
-Checkout Repository
-      │
-      ▼
-Build Docker Image
-      │
-      ▼
-Login to Docker Hub
-      │
-      ▼
-Push Image
-      │
-      ▼
+minikube status
+minikube start --driver=docker
+minikube status
+```
+
+### Step 2: Start the Application with Docker Compose
+
+Bash
+
+```
+cp .env.example .env
+docker compose up -d
+```
+
+Open the application and submit some data to verify that the Flask app and MySQL database are working.
+
+### Step 3: Build and Push the Docker Image
+
+Bash
+
+```
+docker images
+docker tag flask-mysql:latest bilalamjaddevops/flask-mysql:latest
+docker login
+docker push bilalamjaddevops/flask-mysql:latest
+```
+
+### Step 4: Update the Kubernetes Deployment
+
+Edit k8s/flask-deployment.yaml and set the image:
+
+YAML
+
+```
+image: bilalamjaddevops/flask-mysql:latest
+```
+
+### Step 5: Deploy to Kubernetes
+
+Bash
+
+```
+kubectl apply -f k8s/
+```
+
+### Step 6: Verify Resources
+
+Bash
+
+```
+kubectl get deploy -n flask-mysql
+kubectl get pods -n flask-mysql
+kubectl get svc -n flask-mysql
+kubectl get pvc -n flask-mysql
+```
+
+Expected result:
+
+```
+flask-app   1/1   Running
+mysql       1/1   Running
+```
+
+### Step 7: Access the Application
+
+Bash
+
+```
+minikube service flask-service -n flask-mysql
+```
+
+Minikube will open the application in your browser.
+
+On Windows with the Docker driver, Minikube may create a temporary local URL such as:
+
+```
+http://127.0.0.1:17134
+```
+
+Keep the terminal open while accessing the application.
+
+### Useful Commands
+
+Get Minikube IP
+
+Delete Minikube Cluster
+
+`minikube ip``minikube delete`
+
+### Project Flow
+
+```
+Flask Application
+        ↓
+Docker Image
+        ↓
 Docker Hub
+        ↓
+Kubernetes Deployment
+        ↓
+Flask Service (NodePort)
+        ↓
+Browser Access via Minikube
 ```
 
----
+### Key Learning
 
-## Why not deploy to Kubernetes here?
+* Start a Kubernetes cluster using Minikube
 
-Because your Kubernetes cluster is **Minikube on your own computer**.
+* Build and push a Docker image to Docker Hub
 
-GitHub Actions runs on GitHub's servers and **has no network access to your laptop**. A `kubectl apply` step would fail unless your cluster is publicly accessible or hosted on a cloud provider.
+* Deploy a Flask + MySQL application on Kubernetes
 
----
+* Use ConfigMap, Secret, and PVC resources
 
-### My suggestion for your series
+* Expose the application using a NodePort service
 
-I would structure it like this:
+* Verify Kubernetes deployments, pods, services, and persistent storage
 
-* ✅ Repo 1 → Docker
-* ✅ Repo 2 → Docker Compose
-* ✅ Repo 3 → Kubernetes
-* ✅ Repo 4 → GitHub Actions (Build & Push Image)
-* ✅ Repo 5 → ArgoCD (GitOps) using a Kubernetes cluster that ArgoCD can access (for example, a local demo or later on EKS)
+Lab Completed Successfully
 
-This keeps each repository focused on one new technology while following a logical progression.
+You have deployed a Flask + MySQL application on Kubernetes using Minikube.
