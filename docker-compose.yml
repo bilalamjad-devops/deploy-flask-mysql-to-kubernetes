@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  mysql-db:
+    image: mysql:8.4
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: mysqlpassword
+      MYSQL_DATABASE: web_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  flask-app:
+    build: .
+    image: flask-mysql:latest   # 👈 add this line
+    container_name: flask-app
+    restart: unless-stopped
+    depends_on:
+      - mysql-db
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+
+volumes:
+  mysql_data:
